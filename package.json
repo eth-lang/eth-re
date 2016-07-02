@@ -1,0 +1,29 @@
+{
+  "name": "eth-re",
+  "version": "1.0.0",
+  "description": "_React bindings for Eth lang_",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiasaki/eth-re.git"
+  },
+  "keywords": [
+    "react",
+    "eth",
+    "ui",
+    "functional",
+    "state"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kiasaki/eth-re/issues"
+  },
+  "homepage": "https://github.com/kiasaki/eth-re#readme",
+  "devDependencies": {
+    "eth": "1.3.0"
+  }
+}
