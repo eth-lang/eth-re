@@ -1,6 +1,6 @@
-# re
+# eth-re
 
-_React bindings for Eth lang_
+_Eth lang interface to Facebook's React_
 
 # intro
 
