@@ -24,13 +24,12 @@
   },
   "homepage": "https://github.com/kiasaki/eth-re#readme",
   "dependencies": {
-    "eth": "1.4.0",
-    "eth-loader": "1.1.0",
+    "eth": "1.5.0",
     "react": "15.2.0",
     "react-dom": "15.2.0"
   },
   "devDependencies": {
-    "eth-loader": "1.0.0",
+    "eth-loader": "1.5.0",
     "watch": "0.19.1",
     "webpack": "1.13.1"
   }
