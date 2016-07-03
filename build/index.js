@@ -11,73 +11,96 @@
 
   reactDom = require("react-dom");
 
-  createApp = (function (initialState, render) {
+  createAppState = (function (initialState) {
+    return {state: or(initialState, {}), listenners: [], __ethReAppState: true};
+    });
+
+  isAppState = (function (s) {
+    return and((type(s) === ":object:"), s.__ethReAppState);
+    });
+
+  appStateSubscribe = (function (appState, f) {
+    return assoc(":listenners:", append(f, appState.listenners), appState);
+    });
+
+  appStateNotify$ = (function (appState) {
+    return forEach((function (l) {
+      return l(appState);
+      }), appState.listenners);
+    });
+
+  appStateSet$ = (function (appState, path, value) {
+    appState.state = setIn(path, value, appState.state);
+    return appStateNotify$(appState);
+    });
+
+  appStateUpdate$ = (function (appState, path, updater) {
+    appState.state = updateIn(path, value, appState.state);
+    return appStateNotify$(appState);
+    });
+
+  isElementSpec = (function (e) {
+    return and((type(e) === ":array:"), (len(e) > 0));
+    });
+
+  createElement = (function (children) {
+    assert(isElementSpec(children), str("re: create-element: 'children' must be an array with at least one element ", "(html tag or component), got: ", toJson(children)));
     return (function () {
-      var appState = {state: or(initialState, {})};
-      appState.renderer = renderer;
-      rerender();
-      return appState;
+      var tagOrComponent = children[0];
+      var givenProps = children[1];
+      var props = (function() { if (isOfType(":object:", givenProps)) {
+        return givenProps;
+      } else {
+        return {};
+      } })();
+      var childrenStart = (function() { if (isOfType(":object:", givenProps)) {
+        return 2;
+      } else {
+        return 1;
+      } })();
+      var children = map((function (c) {
+        return (function() { if (isOfType(":array:", c)) {
+          return createElement(c);
+        } else {
+          return c;
+        } })();
+        }), children.slice(childrenStart));
+      return apply(react.createElement, concat([tagOrComponent, props], children));
       })();
     });
 
-  set$ = (function (appState, path, value) {
-    appState.state = setIn(appState.state, path, value);
-    return appState.renderer();
-    });
-
-  update$ = (function (appState, path, updater) {
-    return null;
-    });
-
   createComponent = (function (definition) {
-    (function() { if (definition.defaultState) {
-      return definition.getInitialState = (function () {
-      return definition.defaultState;
-      });
+    assert(isOfType(":function:", definition.render), "re: create-component: component needs a render method");
+    return React.createClass(merge(definition, {":displayName:": or(definition.displayName, definition.name, "Component"), ":getInitialState:": (function() { if (isOfType("function", definition.initialState)) {
+      return definition.initialState;
     } else {
-      return null;
-    } })();
-    (function() { if (definition.defaultProps) {
-      return definition.getDefaultProps = (function () {
-      return definition.defaultProps;
+      return (function () {
+      return or(definition.initialState, {});
       });
-    } else {
-      return null;
-    } })();
-    var givenRender = definition.render;
-    definition.render = (function () {
-      return givenRender.call(this, this.props, this.state);
-      });
-    (function() { if (definition.name) {
-      return definition.displayName = definition.name;
-    } else {
-      return null;
-    } })();
-    return React.createClass(definition);
+    } })(), ":render:": (function () {
+      return createElement(definition.render(this.props.appState, this.props, this.state, this));
+      })}));
     });
 
-  el = (function (tagName, props) {
-    var children = Array.prototype.slice.call(arguments, 2);
-    return apply(react.createElement, concat([tagName, props], children));
+  mount = (function (rootEl, mountPoint, appState) {
+    assert(isAppState(appState), "re: mount: called without a valid 'app-state'");
+    return (function () {
+      var renderRoot = (function () {
+        return reactDom.render(roolEl, mountPoint);
+        });
+      appStateSubscribe(appState, renderRoot);
+      return renderRoot();
+      })();
     });
 
-  el = (function (tagName, props) {
-    var children = Array.prototype.slice.call(arguments, 2);
-    return apply(react.createElement, concat([tagName, props], children));
-    });
-
-  render = (function (rootEl, mountPoint, appState) {
-    return createApp(appState, (function () {
-      return reactDom(roolEl, mountPoint);
-      }));
-    });
-
-  htmlTags = ["a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo", "big", "blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup", "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "embed", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "iframe", "img", "input", "ins", "kbd", "keygen", "label", "legend", "li", "link", "main", "map", "mark", "menu", "menuitem", "meta", "meter", "nav", "noscript", "object", "ol", "optgroup", "option", "output", "p", "param", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "script", "section", "select", "small", "source", "span", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr", "circle", "clipPath", "defs", "ellipse", "g", "image", "line", "linearGradient", "mask", "path", "pattern", "polygon", "polyline", "radialGradient", "rect", "stop", "svg", "text", "tspan"];
-
-  forEach((function (tag) {
-    return __eth__module[tag] = curry(el, tag);
-    }), htmlTags);
-
-  
+  __eth__module.createAppState = createAppState;
+  __eth__module.appStateSubscribe = appStateSubscribe;
+  __eth__module.appStateNotify$ = appStateNotify$;
+  __eth__module.appStateSet$ = appStateSet$;
+  __eth__module.appStateUpdate$ = appStateUpdate$;
+  __eth__module.isElementSpec = isElementSpec;
+  __eth__module.createElement = createElement;
+  __eth__module.createComponent = createComponent;
+  __eth__module.mount = mount;
 })(typeof window !== 'undefined' ? window['eth/re'] : module.exports);
 

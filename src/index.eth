@@ -1,70 +1,72 @@
-(package eth/re ()
+(package eth/re (create-app-state app-state-subscribe app-state-notify!
+                 app-state-set! app-state-update!
+                 element-spec? create-element create-component
+                 mount)
 
 (import eth/core (..))
 (import react)
 (import react-dom)
 
-; app
-(def create-app (initial-state render)
-  (let ((app-state {state (or initial-state {})}))
-    (set app-state.renderer renderer)
-    (rerender)
-    app-state))
+; app state
 
-(def set! (app-state path value)
-  (set app-state.state (set-in app-state.state path value))
-  (app-state.renderer))
+(def create-app-state (initial-state)
+  {state (or initial-state {})
+   listenners []
+   __eth-re-app-state true})
 
-(def update! (app-state path updater)
-  ())
+(def app-state? (s)
+  (and (== (type s) :object) (get :__eth-re-app-state s)))
+
+(def app-state-subscribe (app-state f)
+  (assoc :listenners (append f app-state.listenners) app-state))
+
+(def app-state-notify! (app-state)
+  (for-each (fn (l) (l app-state)) app-state.listenners))
+
+(def app-state-set! (app-state path value)
+  (set app-state.state (set-in path value app-state.state))
+  (app-state-notify! app-state))
+
+(def app-state-update! (app-state path updater)
+  (set app-state.state (update-in path value app-state.state))
+  (app-state-notify! app-state))
+
+; react
+
+(def element-spec? (e)
+  (and
+    (== (type e) :array)
+    (> (len e) 0)))
+
+(def create-element (children)
+  (assert (element-spec? children) (str
+    "re: create-element: 'children' must be an array with at least one element "
+    "(html tag or component), got: "
+    (to-json children)))
+  (let ((tag-or-component (get 0 children))
+        (given-props (get 1 children))
+        (props (if (of-type? :object given-props) given-props {}))
+        (children-start (if (of-type? :object given-props) 2 1))
+        (children (map
+          (fn (c) (if (of-type? :array c) (create-element c) c))
+          (children.slice children-start))))
+    (apply react.create-element (concat [tag-or-component props] children))))
 
 (def create-component (definition)
-  ; if `defaultState` if provided, create a `getInitialState` for it
-  (if definition.defaultState
-    (set definition.getInitialState (fn () definition.defaultState))
-    ())
+  (assert (of-type? :function definition.render) "re: create-component: component needs a render method")
+  (React.createClass (merge definition {
+    :display-name (or definition.displayName definition.name "Component")
+    :get-initial-state (if (of-type? "function" definition.initial-state)
+      definition.initial-state
+      (fn ()
+        (or definition.initial-state {})))
+    :render (fn ()
+      (create-element (definition.render @props.app-state @props @state @)))})))
 
-  (if definition.defaultProps
-    (set definition.getDefaultProps (fn () definition.defaultProps))
-    ())
+(def mount (root-el mount-point app-state)
+  (assert (app-state? app-state) "re: mount: called without a valid 'app-state'")
+  (let ((render-root (fn () (react-dom.render rool-el mount-point))))
+    (app-state-subscribe app-state render-root)
+    (render-root)))
 
-  (var given-render definition.render)
-  (set definition.render (fn ()
-    (given-render.call @ @props @state)))
-
-  (if definition.name
-    (set definition.displayName definition.name)
-    ())
-
-  (React.createClass definition))
-
-; react interface
-(def el (tag-name props ... children)
-  (apply react.create-element (concat [tag-name props] children)))
-
-(def el (tag-name props ... children)
-  (apply react.create-element (concat [tag-name props] children)))
-
-(def render (root-el mount-point app-state)
-  (create-app app-state (fn ()
-    (react-dom rool-el mount-point))))
-
-(set html-tags [
-  ; HTML
-  "a" "abbr" "address" "area" "article" "aside" "audio" "b" "base" "bdi" "bdo" "big" "blockquote"
-  "body" "br" "button" "canvas" "caption" "cite" "code" "col" "colgroup" "data" "datalist" "dd"
-  "del" "details" "dfn" "dialog" "div" "dl" "dt" "em" "embed" "fieldset" "figcaption" "figure"
-  "footer" "form" "h1" "h2" "h3" "h4" "h5" "h6" "head" "header" "hgroup" "hr" "html" "i" "iframe"
-  "img" "input" "ins" "kbd" "keygen" "label" "legend" "li" "link" "main" "map" "mark" "menu"
-  "menuitem" "meta" "meter" "nav" "noscript" "object" "ol" "optgroup" "option" "output" "p" "param"
-  "picture" "pre" "progress" "q" "rp" "rt" "ruby" "s" "samp" "script" "section" "select" "small"
-  "source" "span" "strong" "style" "sub" "summary" "sup" "table" "tbody" "td" "textarea" "tfoot"
-  "th" "thead" "time" "title" "tr" "track" "u" "ul" "var" "video" "wbr"
-
-  ; SVG
-  "circle" "clipPath" "defs" "ellipse" "g" "image" "line" "linearGradient" "mask" "path" "pattern"
-  "polygon" "polyline" "radialGradient" "rect" "stop" "svg" "text" "tspan"
-  ])
-
-(for-each (fn (tag) (export tag (curry el tag))) html-tags)
 )
