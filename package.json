@@ -8,28 +8,30 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kiasaki/eth-re.git"
+    "url": "git+https://github.com/eth-lang/eth-re.git"
   },
   "keywords": [
     "react",
     "eth",
     "ui",
+    "wrapper",
+    "view",
     "functional",
     "state"
   ],
-  "author": "",
+  "author": "Frederic Gingras",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kiasaki/eth-re/issues"
+    "url": "https://github.com/eth-lang/eth-re/issues"
   },
-  "homepage": "https://github.com/kiasaki/eth-re#readme",
+  "homepage": "https://github.com/eth-lang/eth-re#readme",
   "dependencies": {
-    "eth": "1.5.1",
-    "react": "15.2.0",
-    "react-dom": "15.2.0"
+    "eth": "4.0.0",
+    "react": "15.2.1",
+    "react-dom": "15.2.1"
   },
   "devDependencies": {
-    "eth-loader": "1.5.0",
+    "eth-loader": "4.0.0",
     "watch": "0.19.1",
     "webpack": "1.13.1"
   }

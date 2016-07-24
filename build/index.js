@@ -1,106 +1,157 @@
-(function(__eth__module) {
-  __eth__global = (typeof window !== 'undefined' ? window : global);
-  __eth__importAll = require("eth/core");
-  __eth__importAllKeys = Object.keys(__eth__importAll);
-  for (var i = 0; i < __eth__importAllKeys.length; i++) {
-    __eth__global[__eth__importAllKeys[i]] = __eth__importAll[__eth__importAllKeys[i]];
-  }
-  ;
+var T = require("eth/core").T;
+var __ = require("eth/core").__;
+var all = require("eth/core").all;
+var and = require("eth/core").and;
+var ap = require("eth/core").ap;
+var append = require("eth/core").append;
+var apply = require("eth/core").apply;
+var assoc = require("eth/core").assoc;
+var call = require("eth/core").call;
+var concat = require("eth/core").concat;
+var forEach = require("eth/core").forEach;
+var gt = require("eth/core").gt;
+var init = require("eth/core").init;
+var is = require("eth/core").is;
+var length = require("eth/core").length;
+var map = require("eth/core").map;
+var merge = require("eth/core").merge;
+var or = require("eth/core").or;
+var path = require("eth/core").path;
+var prop = require("eth/core").prop;
+var props = require("eth/core").props;
+var set = require("eth/core").set;
+var slice = require("eth/core").slice;
+var update = require("eth/core").update;
+var without = require("eth/core").without;
+var eq = require("eth/core").eq;
+var greater = require("eth/core").greater;
+var toJson = require("eth/core").toJson;
+var assert = require("eth/core").assert;
+var string = require("eth/core").string;
+var isOfType = require("eth/core").isOfType;
 
-  react = require("react");
+var react = require("react");
 
-  reactDom = require("react-dom");
+var reactDom = require("react-dom");
 
-  createAppState = (function (initialState) {
-    return {state: or(initialState, {}), listenners: [], __ethReAppState: true};
-    });
+var createAppState = (function (initialState) {
+  return (function () {
+    return {
+      "state": (initial_state || {
+        
+      }), "listenners": [], "__ethReAppState": true
+    };
+  }).call(this);
+});
 
-  isAppState = (function (s) {
-    return and((type(s) === ":object:"), s.__ethReAppState);
-    });
+var isAppState = (function (state) {
+  return (isOfType("object", state) && state.__ethReAppState);
+});
 
-  appStateSubscribe = (function (appState, f) {
-    return assoc(":listenners:", append(f, appState.listenners), appState);
-    });
+var appStateSubscribe = (function (appState, f) {
+  return assoc("listenners", append(f, appState.listenners), appState);
+});
 
-  appStateNotify$ = (function (appState) {
-    return forEach((function (l) {
-      return l(appState);
-      }), appState.listenners);
-    });
+var appStateNotify = (function (appState) {
+  return forEach((function (l) {
+    return l(appState);
+  }), appState.listenners);
+});
 
-  appStateSet$ = (function (appState, path, value) {
+var appStateSet = (function (appState, path, value) {
+  return (function () {
     appState.state = setIn(path, value, appState.state);
-    return appStateNotify$(appState);
-    });
+    return appStateNotify(appState);
+  }).call(this);
+});
 
-  appStateUpdate$ = (function (appState, path, updater) {
-    appState.state = updateIn(path, value, appState.state);
-    return appStateNotify$(appState);
-    });
+var appStateUpdate = (function (appState, path, updater) {
+  return (function () {
+    appState.state = updateIn(path, updater, appState.state);
+    return appStateNotify(appState);
+  }).call(this);
+});
 
-  isElementSpec = (function (e) {
-    return and((type(e) === ":array:"), (len(e) > 0));
-    });
+var isElementSpec = (function (e) {
+  return (isOfType("array", e) && greater(length(e), 0));
+});
 
-  createElement = (function (children) {
-    assert(isElementSpec(children), str("re: create-element: 'children' must be an array with at least one element ", "(html tag or component), got: ", toJson(children)));
-    return (function () {
-      var tagOrComponent = children[0];
-      var givenProps = children[1];
-      var props = (function() { if (isOfType(":object:", givenProps)) {
-        return givenProps;
+var createElement = (function (children) {
+  return (function () {
+    assert(isElementSpec(children), string("re: createElement: 'children' must be and element spec, got: ", toJson(children)));
+    var tagOrComponent = children[0];
+    var haveProperties = isOfType("object", children[1]);
+    var properties = (function () {
+      if (haveProps) {
+        return children[1];
       } else {
-        return {};
-      } })();
-      var childrenStart = (function() { if (isOfType(":object:", givenProps)) {
-        return 2;
-      } else {
-        return 1;
-      } })();
-      var children = map((function (c) {
-        return (function() { if (isOfType(":array:", c)) {
+        return {
+          
+        };
+      }
+    }).call(this);
+    var children = map((function (c) {
+      return (function () {
+        if (isOfType("array", c)) {
           return createElement(c);
         } else {
           return c;
-        } })();
-        }), children.slice(childrenStart));
-      return apply(react.createElement, concat([tagOrComponent, props], children));
-      })();
+        }
+      }).call(this);
+    }), children.slice((function () {
+      if (haveProps) {
+        return 2;
+      } else {
+        return 1;
+      }
+    }).call(this)));
+    return apply(react.createElement, concat([tagOrComponent, properties], children));
+  }).call(this);
+});
+
+var createComponent = (function (definition) {
+  return (function () {
+    (function () {
+      if (isOfType("function", definition)) {
+        return (function () {
+          return definition = {
+            "render": definition
+          };
+        }).call(this);
+      } else {
+        return undefined;
+      }
+    }).call(this);
+    assert(isOfType("function", definition.render), "re: createComponent: component spec needs a render method");
+    return react.createClass(merge(definition, {
+      "displayName": (definition.displayName || definition.name || "Component"), "getInitialState": (function () {
+        if (isOfType("function", definition.initialState)) {
+          return definition.initialState;
+        } else {
+          return (function () {
+            return (definition.initialState || {
+              
+            });
+          });
+        }
+      }).call(this), "render": (function () {
+        return createElement(definition.render(this.props.appState, this.props, this.state, this));
+      })
+    }));
+  }).call(this);
+});
+
+var mount = (function (rooEl, mountPoint, appState) {
+  return (function () {
+    assert(isAppState(appState), "re: mount: called without a valid 'appState'");
+    var renderRoot = (function () {
+      return reactDom.render(roolEl, mountPoint);
     });
+    appStateSubscribe(appState, renderRoot);
+    return renderRoot();
+  }).call(this);
+});
 
-  createComponent = (function (definition) {
-    assert(isOfType(":function:", definition.render), "re: create-component: component needs a render method");
-    return React.createClass(merge(definition, {":displayName:": or(definition.displayName, definition.name, "Component"), ":getInitialState:": (function() { if (isOfType("function", definition.initialState)) {
-      return definition.initialState;
-    } else {
-      return (function () {
-      return or(definition.initialState, {});
-      });
-    } })(), ":render:": (function () {
-      return createElement(definition.render(this.props.appState, this.props, this.state, this));
-      })}));
-    });
-
-  mount = (function (rootEl, mountPoint, appState) {
-    assert(isAppState(appState), "re: mount: called without a valid 'app-state'");
-    return (function () {
-      var renderRoot = (function () {
-        return reactDom.render(roolEl, mountPoint);
-        });
-      appStateSubscribe(appState, renderRoot);
-      return renderRoot();
-      })();
-    });
-
-  __eth__module.createAppState = createAppState;
-  __eth__module.appStateSubscribe = appStateSubscribe;
-  __eth__module.appStateNotify$ = appStateNotify$;
-  __eth__module.appStateSet$ = appStateSet$;
-  __eth__module.appStateUpdate$ = appStateUpdate$;
-  __eth__module.isElementSpec = isElementSpec;
-  __eth__module.createElement = createElement;
-  __eth__module.createComponent = createComponent;
-  __eth__module.mount = mount;
-})(typeof window !== 'undefined' ? window['eth/re'] : module.exports);
-
+module.exports = {
+  "createAppState": createAppState, "appStateSubscribe": appStateSubscribe, "appStateNotify": appStateNotify, "appStateSet": appStateSet, "appStateUpdate": appStateUpdate, "isElementSpec": isElementSpec, "createElement": createElement, "createComponent": createComponent, "mount": mount
+}

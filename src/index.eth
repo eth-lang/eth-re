@@ -1,72 +1,96 @@
-(package eth/re (create-app-state app-state-subscribe app-state-notify!
-                 app-state-set! app-state-update!
-                 element-spec? create-element create-component
-                 mount)
+let(react require("react"))
+let(reactDom require("react-dom"))
 
-(import eth/core (..))
-(import react)
-(import react-dom)
+// app state
 
-; app state
+let(createAppState fn(initialState {{
+  :state or(initial-state {})
+  :listenners []
+  :__ethReAppState true
+}}))
 
-(def create-app-state (initial-state)
-  {state (or initial-state {})
-   listenners []
-   __eth-re-app-state true})
+let(isAppState fn(state and(isOfType(:object state) state.__ethReAppState)))
 
-(def app-state? (s)
-  (and (== (type s) :object) (get :__eth-re-app-state s)))
+let(appStateSubscribe fn(appState f
+  assoc(:listenners append(f appState.listenners) appState)
+))
 
-(def app-state-subscribe (app-state f)
-  (assoc :listenners (append f app-state.listenners) app-state))
+let(appStateNotify fn(appState
+  forEach(fn(l l(appState)) appState.listenners)
+))
 
-(def app-state-notify! (app-state)
-  (for-each (fn (l) (l app-state)) app-state.listenners))
+let(appStateSet fn(appState path value {
+  set(appState.state setIn(path value appState.state))
+  appStateNotify(appState)
+}))
 
-(def app-state-set! (app-state path value)
-  (set app-state.state (set-in path value app-state.state))
-  (app-state-notify! app-state))
 
-(def app-state-update! (app-state path updater)
-  (set app-state.state (update-in path value app-state.state))
-  (app-state-notify! app-state))
+let(appStateUpdate fn(appState path updater {
+  set(appState.state updateIn(path updater appState.state))
+  appStateNotify(appState)
+}))
 
-; react
 
-(def element-spec? (e)
-  (and
-    (== (type e) :array)
-    (> (len e) 0)))
+// react
 
-(def create-element (children)
-  (assert (element-spec? children) (str
-    "re: create-element: 'children' must be an array with at least one element "
-    "(html tag or component), got: "
-    (to-json children)))
-  (let ((tag-or-component (get 0 children))
-        (given-props (get 1 children))
-        (props (if (of-type? :object given-props) given-props {}))
-        (children-start (if (of-type? :object given-props) 2 1))
-        (children (map
-          (fn (c) (if (of-type? :array c) (create-element c) c))
-          (children.slice children-start))))
-    (apply react.create-element (concat [tag-or-component props] children))))
+let(isElementSpec fn(e
+  and(isOfType(:array e) >(length(e) 0))
+))
 
-(def create-component (definition)
-  (assert (of-type? :function definition.render) "re: create-component: component needs a render method")
-  (React.createClass (merge definition {
-    :display-name (or definition.displayName definition.name "Component")
-    :get-initial-state (if (of-type? "function" definition.initial-state)
-      definition.initial-state
-      (fn ()
-        (or definition.initial-state {})))
-    :render (fn ()
-      (create-element (definition.render @props.app-state @props @state @)))})))
+let(createElement fn(children {
+  assert(isElementSpec(children) string("re: createElement: 'children' must be and element spec, got: " toJson(children)))
 
-(def mount (root-el mount-point app-state)
-  (assert (app-state? app-state) "re: mount: called without a valid 'app-state'")
-  (let ((render-root (fn () (react-dom.render rool-el mount-point))))
-    (app-state-subscribe app-state render-root)
-    (render-root)))
+  let(tagOrComponent children.0)
+  let(haveProperties isOfType(:object children.1))
+  let(properties if(haveProps children.1 {}))
+  let(children map(
+    fn(c if(isOfType(:array c) createElement(c) c))
+    children.slice(if(haveProps 2 1))
+  ))
 
-)
+  apply(react.createElement concat([tagOrComponent properties] children))
+}))
+
+// defined a new react component from the given spec
+let(createComponent fn(definition {
+  // support functional components
+  if(isOfType(:function definition) {
+    set(definition {:render definition})
+  })
+
+  assert(isOfType(:function definition.render) "re: createComponent: component spec needs a render method")
+
+  react.createClass(merge(definition {
+    :displayName or(definition.displayName definition.name "Component")
+    :getInitialState if(isOfType(:function definition.initialState)
+      definition.initialState
+      fn(or(definition.initialState {})))
+    :render fn(createElement(definition.render(this.props.appState this.props this.state this)))
+  }))
+}))
+
+// mounts a root element to a given DOM element and starts listenning for state changes
+let(mount fn(rooEl mountPoint appState {
+  assert(isAppState(appState) "re: mount: called without a valid 'appState'")
+
+  // define the root rerender method that will be called on state updates
+  let(renderRoot fn(reactDom.render(roolEl mountPoint)))
+
+  // listen for app state updates
+  appStateSubscribe(appState renderRoot)
+
+  // make an initial render
+  renderRoot()
+}))
+
+set(module.exports {
+  :createAppState createAppState
+  :appStateSubscribe appStateSubscribe
+  :appStateNotify appStateNotify
+  :appStateSet appStateSet
+  :appStateUpdate appStateUpdate
+  :isElementSpec isElementSpec
+  :createElement createElement
+  :createComponent createComponent
+  :mount mount
+})
