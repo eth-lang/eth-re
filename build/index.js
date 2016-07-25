@@ -29,6 +29,9 @@ var toJson = require("eth/core").toJson;
 var assert = require("eth/core").assert;
 var string = require("eth/core").string;
 var isOfType = require("eth/core").isOfType;
+var getIn = require("eth/core").getIn;
+var setIn = require("eth/core").setIn;
+var updateIn = require("eth/core").updateIn;
 
 var react = require("react");
 
@@ -37,7 +40,7 @@ var reactDom = require("react-dom");
 var createAppState = (function (initialState) {
   return (function () {
     return {
-      "state": (initial_state || {
+      "state": (initialState || {
         
       }), "listenners": [], "__ethReAppState": true
     };
@@ -80,7 +83,7 @@ var createElement = (function (children) {
   return (function () {
     assert(isElementSpec(children), string("re: createElement: 'children' must be and element spec, got: ", toJson(children)));
     var tagOrComponent = children[0];
-    var haveProperties = isOfType("object", children[1]);
+    var haveProps = isOfType("object", children[1]);
     var properties = (function () {
       if (haveProps) {
         return children[1];
@@ -90,7 +93,7 @@ var createElement = (function (children) {
         };
       }
     }).call(this);
-    var children = map((function (c) {
+    var transformedChildren = map((function (c) {
       return (function () {
         if (isOfType("array", c)) {
           return createElement(c);
@@ -105,7 +108,7 @@ var createElement = (function (children) {
         return 1;
       }
     }).call(this)));
-    return apply(react.createElement, concat([tagOrComponent, properties], children));
+    return apply(react.createElement, concat([tagOrComponent, properties], transformedChildren));
   }).call(this);
 });
 
@@ -124,7 +127,11 @@ var createComponent = (function (definition) {
     }).call(this);
     assert(isOfType("function", definition.render), "re: createComponent: component spec needs a render method");
     return react.createClass(merge(definition, {
-      "displayName": (definition.displayName || definition.name || "Component"), "getInitialState": (function () {
+      "contextTypes": merge((definition.contextTypes || {
+        
+      }), {
+        "appState": react.PropTypes.object.isRequired
+      }), "displayName": (definition.displayName || definition.name || "Component"), "getInitialState": (function () {
         if (isOfType("function", definition.initialState)) {
           return definition.initialState;
         } else {
@@ -135,17 +142,38 @@ var createComponent = (function (definition) {
           });
         }
       }).call(this), "render": (function () {
-        return createElement(definition.render(this.props.appState, this.props, this.state, this));
+        return createElement(definition.render(this.context.appState, this.props, this.state, this));
       })
     }));
   }).call(this);
 });
 
-var mount = (function (rooEl, mountPoint, appState) {
+var connect = (function (appState, el) {
+  return (function () {
+    var AppStateProvider = createComponent({
+      "childContextTypes": {
+        "appState": react.PropTypes.object.isRequired
+      }, "getChildContext": (function () {
+        return (function () {
+          return {
+            "appState": appState
+          };
+        }).call(this);
+      }), "render": (function () {
+        return (function () {
+          return el;
+        }).call(this);
+      })
+    });
+    return AppStateProvider;
+  }).call(this);
+});
+
+var mount = (function (rootEl, mountPoint, appState) {
   return (function () {
     assert(isAppState(appState), "re: mount: called without a valid 'appState'");
     var renderRoot = (function () {
-      return reactDom.render(roolEl, mountPoint);
+      return reactDom.render(react.createElement(connect(appState, rootEl)), mountPoint);
     });
     appStateSubscribe(appState, renderRoot);
     return renderRoot();

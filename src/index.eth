@@ -4,7 +4,7 @@ let(reactDom require("react-dom"))
 // app state
 
 let(createAppState fn(initialState {{
-  :state or(initial-state {})
+  :state or(initialState {})
   :listenners []
   :__ethReAppState true
 }}))
@@ -41,14 +41,14 @@ let(createElement fn(children {
   assert(isElementSpec(children) string("re: createElement: 'children' must be and element spec, got: " toJson(children)))
 
   let(tagOrComponent children.0)
-  let(haveProperties isOfType(:object children.1))
+  let(haveProps isOfType(:object children.1))
   let(properties if(haveProps children.1 {}))
-  let(children map(
+  let(transformedChildren map(
     fn(c if(isOfType(:array c) createElement(c) c))
     children.slice(if(haveProps 2 1))
   ))
 
-  apply(react.createElement concat([tagOrComponent properties] children))
+  apply(react.createElement concat([tagOrComponent properties] transformedChildren))
 }))
 
 // defined a new react component from the given spec
@@ -61,20 +61,36 @@ let(createComponent fn(definition {
   assert(isOfType(:function definition.render) "re: createComponent: component spec needs a render method")
 
   react.createClass(merge(definition {
+    :contextTypes merge(or(definition.contextTypes {}) {
+      :appState react.PropTypes.object.isRequired
+    })
     :displayName or(definition.displayName definition.name "Component")
     :getInitialState if(isOfType(:function definition.initialState)
       definition.initialState
       fn(or(definition.initialState {})))
-    :render fn(createElement(definition.render(this.props.appState this.props this.state this)))
+    :render fn(createElement(definition.render(this.context.appState this.props this.state this)))
   }))
 }))
 
+let(connect fn(appState el {
+  let(AppStateProvider createComponent({
+    :childContextTypes {:appState react.PropTypes.object.isRequired}
+    :getChildContext fn({
+      {:appState appState}
+    })
+    :render fn({
+      el
+    })
+  }))
+  AppStateProvider
+}))
+
 // mounts a root element to a given DOM element and starts listenning for state changes
-let(mount fn(rooEl mountPoint appState {
+let(mount fn(rootEl mountPoint appState {
   assert(isAppState(appState) "re: mount: called without a valid 'appState'")
 
   // define the root rerender method that will be called on state updates
-  let(renderRoot fn(reactDom.render(roolEl mountPoint)))
+  let(renderRoot fn(reactDom.render(react.createElement(connect(appState rootEl)) mountPoint)))
 
   // listen for app state updates
   appStateSubscribe(appState renderRoot)
