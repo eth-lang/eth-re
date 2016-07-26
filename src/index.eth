@@ -44,7 +44,7 @@ let(createElement fn(children {
   let(haveProps isOfType(:object children.1))
   let(properties if(haveProps children.1 {}))
   let(transformedChildren map(
-    fn(c if(isOfType(:array c) createElement(c) c))
+    fn(c if(isElementSpec(c) createElement(c) c))
     children.slice(if(haveProps 2 1))
   ))
 

@@ -95,7 +95,7 @@ var createElement = (function (children) {
     }).call(this);
     var transformedChildren = map((function (c) {
       return (function () {
-        if (isOfType("array", c)) {
+        if (isElementSpec(c)) {
           return createElement(c);
         } else {
           return c;
