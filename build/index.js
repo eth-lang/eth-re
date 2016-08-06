@@ -93,12 +93,14 @@ var createElement = (function (children) {
         };
       }
     }).call(this);
-    var transformedChildren = map((function (c) {
+    var childrenNodes = map((function (n) {
       return (function () {
-        if (isElementSpec(c)) {
-          return createElement(c);
+        if ((isOfType("array", n) && isOfType("array", n[0]))) {
+          return map(createElement, n);
+        } else if (isElementSpec(n)) {
+          return createElement(n);
         } else {
-          return c;
+          return n;
         }
       }).call(this);
     }), children.slice((function () {
@@ -108,7 +110,7 @@ var createElement = (function (children) {
         return 1;
       }
     }).call(this)));
-    return apply(react.createElement, concat([tagOrComponent, properties], transformedChildren));
+    return apply(react.createElement, concat([tagOrComponent, properties], childrenNodes));
   }).call(this);
 });
 
@@ -150,8 +152,8 @@ var createComponent = (function (definition) {
 
 var connect = (function (appState, el) {
   return (function () {
-    var AppStateProvider = createComponent({
-      "childContextTypes": {
+    return react.createClass({
+      "displayName": "AppStateProvider", "childContextTypes": {
         "appState": react.PropTypes.object.isRequired
       }, "getChildContext": (function () {
         return (function () {
@@ -160,12 +162,9 @@ var connect = (function (appState, el) {
           };
         }).call(this);
       }), "render": (function () {
-        return (function () {
-          return el;
-        }).call(this);
+        return createElement(el);
       })
     });
-    return AppStateProvider;
   }).call(this);
 });
 

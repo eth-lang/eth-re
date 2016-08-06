@@ -43,12 +43,19 @@ let(createElement fn(children {
   let(tagOrComponent children.0)
   let(haveProps isOfType(:object children.1))
   let(properties if(haveProps children.1 {}))
-  let(transformedChildren map(
-    fn(c if(isElementSpec(c) createElement(c) c))
+  let(childrenNodes map(
+    fn(n cond(
+      // An array of elements
+      and(isOfType(:array n) isOfType(:array n.0)) map(createElement n)
+      // One element
+      isElementSpec(n) createElement(n)
+      // Most likely a string or null
+      :else n
+    ))
     children.slice(if(haveProps 2 1))
   ))
 
-  apply(react.createElement concat([tagOrComponent properties] transformedChildren))
+  apply(react.createElement concat([tagOrComponent properties] childrenNodes))
 }))
 
 // defined a new react component from the given spec
@@ -73,16 +80,14 @@ let(createComponent fn(definition {
 }))
 
 let(connect fn(appState el {
-  let(AppStateProvider createComponent({
+  react.createClass({
+    :displayName "AppStateProvider"
     :childContextTypes {:appState react.PropTypes.object.isRequired}
     :getChildContext fn({
       {:appState appState}
     })
-    :render fn({
-      el
-    })
-  }))
-  AppStateProvider
+    :render fn(createElement(el))
+  })
 }))
 
 // mounts a root element to a given DOM element and starts listenning for state changes
