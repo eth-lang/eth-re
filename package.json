@@ -1,6 +1,6 @@
 {
   "name": "eth-re",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Eth lang interface to Facebook's React",
   "main": "build/index.js",
   "scripts": {
@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/eth-lang/eth-re#readme",
   "dependencies": {
-    "eth": "4.0.0",
+    "eth": "4.0.1",
     "react": "15.2.1",
     "react-dom": "15.2.1"
   },
